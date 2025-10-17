@@ -34,12 +34,10 @@ const login = (req, res) => {
 
     const [loginUser] = results;
 
-    console.log(loginUser);
-
     // 사용자가 존재하지 않는 경우
     if (!loginUser) {
       return res.status(StatusCodes.UNAUTHORIZED).json({
-        message: '이메일 또는 비밀번호가 틀렸습니다.',
+        message: '아이디 또는 비밀번호가 틀렸습니다.',
       });
     }
 
@@ -57,7 +55,6 @@ const login = (req, res) => {
 
     // 인증 성공
     const token = createToken({ email: loginUser.username });
-    console.log(token);
 
     res.cookie('token', token, {
       httpOnly: true,
