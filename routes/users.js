@@ -1,12 +1,11 @@
-const express = require('express')
-const router = express.Router()
-const connection = require('../mariadb')
+const express = require('express');
+const router = express.Router();
+const authController = require('../controllers/authController');
+const { validateJoin, validateLogin } = require('../middleware/validators');
 
-router.use(express.json())
+router.use(express.json());
 
-// DB 연동 테스트
-connection.query('SELECT * FROM `users`', (err, results, fields) => {
-  console.log(results)
-})
+router.post('/join', validateJoin, authController.join);
+router.post('/login', validateLogin, authController.login);
 
-module.exports = router
+module.exports = router;

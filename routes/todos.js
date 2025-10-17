@@ -1,7 +1,7 @@
-const express = require("express");
+const express = require('express');
 const router = express.Router();
-const connection = require("../mariadb");
-const { body, param, validationResult } = require("express-validator");
+const connection = require('../mariadb');
+const { body, param, validationResult } = require('express-validator');
 
 router.use(express.json());
 
@@ -16,18 +16,18 @@ const validate = (req, res, next) => {
   }
 };
 
-router.route("/");
+router.route('/');
 // 할일 전체 조회, 추가
 router
-  .route("/")
+  .route('/')
 
   .get(
     // 특정 유저의 할일 전체 조회
     [
-      body("userId")
+      body('userId')
         .notEmpty()
         .isInt()
-        .withMessage("userId는 숫자여야 합니다."),
+        .withMessage('userId는 숫자여야 합니다.'),
       validate,
     ],
     (req, res) => {
@@ -38,7 +38,7 @@ router
                    (SELECT team_id FROM team_members WHERE user_id = ?) 
                    ORDER BY created_at DESC`;
 
-      connection.query(sql, [userId, userId], function (err, results) {
+      connection.query(sql, userId, function (err, results) {
         if (err) {
           console.log(err);
           return res.status(400).end();
@@ -56,19 +56,19 @@ router
   //할 일 등록 api
   .post(
     [
-      body("userId")
+      body('userId')
         .notEmpty()
         .isInt()
-        .withMessage("userId는 숫자여야 합니다."),
-      body("title")
+        .withMessage('userId는 숫자여야 합니다.'),
+      body('title')
         .notEmpty()
-        .withMessage("할 일 제목을 입력해주세요.")
+        .withMessage('할 일 제목을 입력해주세요.')
         .isLength({ max: 255 })
-        .withMessage("제목은 255자 이내로 입력해주세요"),
-      body("teamId")
+        .withMessage('제목은 255자 이내로 입력해주세요'),
+      body('teamId')
         .optional()
         .isInt()
-        .withMessage("teamId는 숫자여야 합니다."),
+        .withMessage('teamId는 숫자여야 합니다.'),
       validate,
     ],
     (req, res) => {
@@ -98,10 +98,10 @@ router
 
 // 여기서 할일 개별id로 조회하고, 수정하고, 삭제하고
 router
-  .route("/:id")
+  .route('/:id')
   // 할일 개별 조회
   .get(
-    [param("id").notEmpty().withMessage("할 일 id 필요해"), validate],
+    [param('id').notEmpty().withMessage('할 일 id 필요해'), validate],
     (req, res) => {
       let { id } = req.params;
       id = parseInt(id);
@@ -117,26 +117,95 @@ router
           res.status(200).json(results[0]);
         } else {
           res.status(404).json({
-            message: "해당 할일을 찾을 수 없어요",
+            message: '해당 할일을 찾을 수 없어요',
+          });
+        }
+      });
+    }
+  )
+  //할일 수정
+  .put(
+    [param('id').notEmpty().withMessage('할 일 id 필요해'), validate],
+    (req, res) => {
+      let { id } = req.params;
+      id = parseInt(id);
+
+      const { title, is_done } = req.body;
+
+      if (title === undefined && is_done === undefined) {
+        return res.status(400).json({
+          message: '수정할 내용을 입력해주세요.',
+        });
+      }
+
+      //SQL 쿼리 생성
+      let sql = `UPDATE todos SET`;
+      let values = [];
+
+      if (title !== undefined) {
+        sql += `title = ?, `;
+        values.push(title);
+      }
+
+      if (is_done !== undefined) {
+        sql += `is_done = ?, `;
+        values.push(is_done);
+      }
+
+      sql = sql.slice(0, -2) + ` WHERE id = ?`;
+      values.push(id);
+
+      connection.query(sql, values, function (err, results) {
+        if (err) {
+          console.log(err);
+          return res.status(400).end();
+        }
+
+        if (results.affectedRows == 0) {
+          return res.status(404).json({
+            message: '해당 할일을 찾을 수 없습니다.',
+          });
+        } else {
+          const selectSql = `SELECT * FROM todos WHERE id = ?`;
+          connection.query(selectSql, id, function (err, todo) {
+            if (err) {
+              console.log(err);
+              return res.status(400).end();
+            }
+            res.status(200).json(todo[0]);
+          });
+        }
+      });
+    }
+  )
+  //할 일 삭제
+  .delete(
+    [param('id').notEmpty().withMessage('할일 id 필요'), validate],
+    (req, res) => {
+      let { id } = req.body;
+      id = parseInt(id);
+
+      const sql = `DELETE FROM todos WHERE id = ?`;
+      connection.query(sql, id, function (err, results) {
+        if (err) {
+          console.log(err);
+          return res.status(400).end();
+        }
+
+        if (results.affectedRows == 0) {
+          return res.status(404).json({
+            message: '해당 할일을 찾을 수 없습니다.',
+          });
+        } else {
+          res.status(200).json({
+            message: '할일이 삭제되었습니다.',
           });
         }
       });
     }
   );
 
-// .put(
-
-//   [
-//     param("id").notEmpty().withMessage("할 일 id 필요해"), validate
-//   ],
-//     (req, res) => {
-//       let {id} = req.params;
-//       id = parseInt(id);
-
-//       const { title, is_done } = req.body;
-
-//     }
-
-// )
-
+// 1. put쪽 로직 다시 손 봐야할듯 너무 if문 남발.
+// 2. if(err) 이것과 affetedRows 부분 중복 해결하기.
+// 3. 제대로 작동하는지 db되면 다시 확인해보자.
 module.exports = router;
