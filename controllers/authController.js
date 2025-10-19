@@ -62,7 +62,7 @@ const login = (req, res) => {
     // 인증 성공
     const token = createToken({ email: loginUser.username });
 
-    res.cookie('token', token, {
+    res.cookie('accessToken', token, {
       httpOnly: true,
     });
 
