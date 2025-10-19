@@ -47,9 +47,6 @@ router
 
         if (results.length) {
           res.status(200).json(results);
-        } else {
-          console.log(err);
-          return res.status(400).end();
         }
       });
     }
@@ -89,45 +86,6 @@ router
 // 여기서 할일 개별id로 조회하고, 수정하고, 삭제하고
 router
   .route('/:id')
-  // 할일 상세 조회
-  /*
-  .get(
-    [
-      param('id').notEmpty().withMessage('할 일 id 필요해'),
-      body('userId')
-        .notEmpty()
-        .isInt()
-        .withMessage('userId는 숫자여야 합니다.'),
-      validate,
-    ],
-    (req, res) => {
-      let { id } = req.params;
-      const { userId } = req.body;
-      id = parseInt(id);
-
-       const sql = `SELECT DISTINCT t.*
-        FROM todos t
-        LEFT JOIN team_members tm ON t.team_id = tm.teams_id AND tm.users_id = ?
-        WHERE t.id = ? AND (t.user_id = ? OR tm.users_id IS NOT NULL)`;
-      
-      connection.query(sql, [userId, id, userId], function (err, results) {
-        if (err) {
-          console.log(err);
-          return res.status(400).end();
-        }
-
-        if (results.length) {
-          res.status(200).json(results[0]);
-        } else {
-          res.status(404).json({
-            message: '해당 할일을 찾을 수 없어요',
-          });
-        }
-      });
-    }
-  )
-
-  */
 
   //할일 수정
   .put(
