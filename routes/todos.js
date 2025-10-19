@@ -16,7 +16,6 @@ const validate = (req, res, next) => {
   }
 };
 
-router.route('/');
 // 할일 전체 조회, 추가
 router
   .route('/')
@@ -168,7 +167,7 @@ router
           return res.status(400).end();
         }
 
-        if (results.affectedRows == 0) {
+        if (results.affectedRows === 0) {
           return res.status(404).json({
             message: '해당 할일을 찾을 수 없습니다.',
           });
@@ -199,7 +198,7 @@ router
           return res.status(400).end();
         }
 
-        if (results.affectedRows == 0) {
+        if (results.affectedRows === 0) {
           return res.status(404).json({
             message: '해당 할일을 찾을 수 없습니다.',
           });
