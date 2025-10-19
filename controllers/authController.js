@@ -14,6 +14,12 @@ const join = (req, res) => {
 
   pool.query(sql, [username, hashPassword, salt], (err, results) => {
     if (err) {
+      if (err.code === 'ER_DUP_ENTRY') {
+        return res.status(StatusCodes.CONFLICT).json({
+          message: '이미 존재하는 아이디입니다.',
+        }); // 409 : 이미 존재하는 리소스를 생성하려고 할 때 사용
+      }
+
       console.log(err);
       return res.status(StatusCodes.BAD_REQUEST).end();
     }
@@ -56,7 +62,7 @@ const login = (req, res) => {
     // 인증 성공
     const token = createToken({ email: loginUser.username });
 
-    res.cookie('token', token, {
+    res.cookie('accessToken', token, {
       httpOnly: true,
     });
 
