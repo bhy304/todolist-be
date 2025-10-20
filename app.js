@@ -27,3 +27,5 @@ app.use('/todos', todoRouter);
 
 // 서버 시작
 app.listen(PORT);
+
+module.exports = app;
