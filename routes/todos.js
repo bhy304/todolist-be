@@ -1,13 +1,23 @@
 const express = require('express');
 const router = express.Router();
-const connection = require('../mariadb');
+const todoController = require('../controllers/todoController');
+const {
+  validateGetTodos,
+  validateCreateTodo,
+  validateUpdateTodo,
+  validateDeleteTodo,
+} = require('../middleware/validators');
 
 router.use(express.json());
 
-// DB 연동 테스트
-connection.query('SELECT * FROM `todos`', (err, results, fields) => {
-  console.log('hello');
-  console.log(results);
-});
+router
+  .route('/')
+  .get(validateGetTodos, todoController.getTodos)
+  .post(validateCreateTodo, todoController.createTodo);
+
+router
+  .route('/:id')
+  .put(validateUpdateTodo, todoController.updateTodo)
+  .delete(validateDeleteTodo, todoController.deleteTodo);
 
 module.exports = router;
