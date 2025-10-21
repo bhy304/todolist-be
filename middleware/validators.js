@@ -1,5 +1,32 @@
 const { body, param, validationResult } = require('express-validator');
 const { StatusCodes } = require('http-status-codes');
+const { verifyToken } = require('../utils/authorizeUtils');
+
+/**
+ * JWT 토큰을 검증하는 미들웨어
+ * Authorization 헤더에서 Bearer 토큰을 추출하여 검증하고,
+ * 검증된 사용자 정보를 req.user에 저장합니다.
+ */
+const authenticateToken = (req, res, next) => {
+  try {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+
+    if (!token) {
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        message: '인증 토큰이 필요합니다.',
+      });
+    }
+
+    const decoded = verifyToken(token);
+    req.user = decoded; // 검증된 사용자 정보를 req.user에 저장
+    next();
+  } catch (error) {
+    return res.status(StatusCodes.FORBIDDEN).json({
+      message: error.message || '유효하지 않은 토큰입니다.',
+    });
+  }
+};
 
 // 유효성 검사 결과를 확인하는 미들웨어
 const validateRequest = (req, res, next) => {
@@ -13,7 +40,7 @@ const validateRequest = (req, res, next) => {
   });
 };
 
-// 회원가입 유효성 검사
+// 회원가입 유효성 검사 규칙 정의
 const validateJoin = [
   body('username')
     .notEmpty()
@@ -28,7 +55,7 @@ const validateJoin = [
   validateRequest,
 ];
 
-// 로그인 유효성 검사
+// 로그인 유효성 검사 규칙 정의
 const validateLogin = [
   body('username')
     .notEmpty()
@@ -45,13 +72,12 @@ const validateLogin = [
 
 // 할일 전체 조회
 const validateGetTodos = [
-  body('userId').notEmpty().isInt().withMessage('userId는 숫자여야 합니다.'),
+  // body('userId').notEmpty().isInt().withMessage('userId는 숫자여야 합니다.'),
   validateRequest,
 ];
 
 // 할일 등록
 const validateCreateTodo = [
-  body('userId').notEmpty().isInt().withMessage('userId는 숫자여야 합니다.'),
   body('content')
     .notEmpty()
     .withMessage('할 일 제목을 입력해주세요.')
@@ -59,6 +85,7 @@ const validateCreateTodo = [
     .withMessage('제목은 255자 이내로 입력해주세요'),
   validateRequest,
 ];
+
 // 할일 수정
 const validateUpdateTodo = [
   param('id').notEmpty().withMessage('할 일 id 필요해'),
@@ -71,6 +98,7 @@ const validateDeleteTodo = [
 ];
 
 module.exports = {
+  authenticateToken,
   validateJoin,
   validateLogin,
   validateGetTodos,

@@ -1,9 +1,8 @@
 const pool = require('../mariadb');
 
 const getTodos = (req, res) => {
-  const { userId } = req.body;
+  const userId = req.user.id; // 토큰에서 추출한 userId 사용
 
-  // userId에 해당하는 할일만 조회 (개인 + 팀 할일 모두)  LEFT JOIN
   const sql = `SELECT DISTINCT t.*
         FROM todos t
         LEFT JOIN team_members tm ON t.team_id = tm.teams_id AND tm.users_id = ?
@@ -16,16 +15,15 @@ const getTodos = (req, res) => {
       return res.status(400).end();
     }
 
-    if (results.length) {
-      res.status(200).json(results);
-    }
+    return res.status(200).json(results);
   });
 };
 
 const createTodo = (req, res) => {
-  const { userId, content } = req.body;
+  const userId = req.user.id; // 토큰에서 추출한 userId 사용
+  const { content } = req.body;
 
-  const sql = `INSERT INTO todos(user_id,  content) VALUES (?, ?)`;
+  const sql = `INSERT INTO todos(user_id, content) VALUES (?, ?)`;
   const values = [userId, content];
 
   pool.query(sql, values, function (err, results) {
@@ -40,6 +38,7 @@ const createTodo = (req, res) => {
 
 const updateTodo = (req, res) => {
   let { id } = req.params;
+  const userId = req.user.id; // 토큰에서 추출한 userId 사용
   id = parseInt(id);
 
   const { content, is_done } = req.body;
@@ -50,7 +49,7 @@ const updateTodo = (req, res) => {
     });
   }
 
-  //SQL 쿼리 생성
+  //SQL 쿼리 생성 (본인의 할일만 수정 가능하도록 user_id 조건 추가)
   let sql = `UPDATE todos SET `;
   let values = [];
 
@@ -64,8 +63,8 @@ const updateTodo = (req, res) => {
     values.push(is_done);
   }
 
-  sql = sql.slice(0, -2) + ` WHERE id = ?`;
-  values.push(id);
+  sql = sql.slice(0, -2) + ` WHERE id = ? AND user_id = ?`;
+  values.push(id, userId);
 
   pool.query(sql, values, function (err, results) {
     if (err) {
@@ -75,7 +74,7 @@ const updateTodo = (req, res) => {
 
     if (results.affectedRows === 0) {
       return res.status(404).json({
-        message: '해당 할일을 찾을 수 없습니다.',
+        message: '해당 할일을 찾을 수 없거나 수정 권한이 없습니다.',
       });
     } else {
       const selectSql = `SELECT * FROM todos WHERE id = ?`;
@@ -92,10 +91,12 @@ const updateTodo = (req, res) => {
 
 const deleteTodo = (req, res) => {
   let { id } = req.params;
+  const userId = req.user.id; // 토큰에서 추출한 userId 사용
   id = parseInt(id);
 
-  const sql = `DELETE FROM todos WHERE id = ?`;
-  pool.query(sql, id, function (err, results) {
+  // 본인의 할일만 삭제 가능하도록 user_id 조건 추가
+  const sql = `DELETE FROM todos WHERE id = ? AND user_id = ?`;
+  pool.query(sql, [id, userId], function (err, results) {
     if (err) {
       console.log(err);
       return res.status(400).end();
@@ -103,7 +104,7 @@ const deleteTodo = (req, res) => {
 
     if (results.affectedRows === 0) {
       return res.status(404).json({
-        message: '해당 할일을 찾을 수 없습니다.',
+        message: '해당 할일을 찾을 수 없거나 삭제 권한이 없습니다.',
       });
     } else {
       res.status(200).json({
