@@ -1,9 +1,8 @@
 const pool = require('../mariadb');
 
 const getTodos = (req, res) => {
-  const { userId } = req.body;
+  const userId = req.user.id; // 토큰에서 추출한 userId 사용
 
-  // userId에 해당하는 할일만 조회 (개인 + 팀 할일 모두)  LEFT JOIN
   const sql = `SELECT DISTINCT t.*
         FROM todos t
         LEFT JOIN team_members tm ON t.team_id = tm.teams_id AND tm.users_id = ?
@@ -15,10 +14,10 @@ const getTodos = (req, res) => {
       console.log(err);
       return res.status(400).end();
     }
-
-    if (results.length) {
-      res.status(200).json(results);
+    if (!results || results.length === 0) {
+      return res.status(204).end();
     }
+    return res.status(200).json(results);
   });
 };
 
