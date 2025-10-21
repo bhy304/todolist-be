@@ -3,7 +3,6 @@ const router = express.Router();
 const todoController = require('../controllers/todoController');
 const {
   authenticateToken,
-  validateGetTodos,
   validateCreateTodo,
   validateUpdateTodo,
   validateDeleteTodo,
