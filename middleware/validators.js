@@ -70,12 +70,6 @@ const validateLogin = [
   validateRequest,
 ];
 
-// 할일 전체 조회
-const validateGetTodos = [
-  // body('userId').notEmpty().isInt().withMessage('userId는 숫자여야 합니다.'),
-  validateRequest,
-];
-
 // 할일 등록
 const validateCreateTodo = [
   body('content')
@@ -91,6 +85,7 @@ const validateUpdateTodo = [
   param('id').notEmpty().withMessage('할 일 id 필요해'),
   validateRequest,
 ];
+
 // 할일 삭제
 const validateDeleteTodo = [
   param('id').notEmpty().withMessage('할일 id 필요'),
@@ -101,7 +96,6 @@ module.exports = {
   authenticateToken,
   validateJoin,
   validateLogin,
-  validateGetTodos,
   validateCreateTodo,
   validateUpdateTodo,
   validateDeleteTodo,

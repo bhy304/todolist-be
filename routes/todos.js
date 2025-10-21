@@ -13,11 +13,11 @@ router.use(express.json());
 router
   .route('/')
   .get(authenticateToken, todoController.getTodos)
-  .post(validateCreateTodo, todoController.createTodo);
+  .post(authenticateToken, validateCreateTodo, todoController.createTodo);
 
 router
   .route('/:id')
-  .put(validateUpdateTodo, todoController.updateTodo)
-  .delete(validateDeleteTodo, todoController.deleteTodo);
+  .put(authenticateToken, validateUpdateTodo, todoController.updateTodo)
+  .delete(authenticateToken, validateDeleteTodo, todoController.deleteTodo);
 
 module.exports = router;

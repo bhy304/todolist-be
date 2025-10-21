@@ -14,7 +14,9 @@ const getTodos = (req, res) => {
       console.log(err);
       return res.status(400).end();
     }
-
+    if (!results || results.length === 0) {
+      return res.status(204).end();
+    }
     return res.status(200).json(results);
   });
 };
