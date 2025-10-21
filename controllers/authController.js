@@ -56,14 +56,18 @@ const login = (req, res) => {
       });
     }
 
-    const token = createToken({ email: loginUser.username });
-
-    res.cookie('accessToken', token, {
-      httpOnly: true,
+    const token = createToken({
+      id: loginUser.id,
+      username: loginUser.username,
     });
 
     res.status(StatusCodes.OK).json({
       message: '로그인되었습니다.',
+      token: token,
+      user: {
+        id: loginUser.id,
+        username: loginUser.username,
+      },
     });
   });
 };
