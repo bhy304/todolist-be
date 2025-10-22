@@ -44,14 +44,19 @@ const validateRequest = (req, res, next) => {
 const validateJoin = [
   body('username')
     .notEmpty()
-    .withMessage('값이 입력되지 않았습니다.')
-    .isString()
-    .withMessage('문자열이 아닙니다.'),
+    .withMessage('아이디를 입력해주세요.')
+    .trim()
+    .isLength({ min: 4, max: 20 })
+    .withMessage('아이디는 4자 이상 20자 이내여야 합니다.')
+    .matches(/^[a-zA-Z0-9_-]+$/)
+    .withMessage('아이디는 영문, 숫자, 밑줄(_), 대시(-)만 사용할 수 있습니다.'),
   body('password')
     .notEmpty()
-    .withMessage('값이 입력되지 않았습니다.')
-    .isString()
-    .withMessage('문자열이 아닙니다.'),
+    .withMessage('비밀번호를 입력해주세요.')
+    .isLength({ min: 8, max: 100 })
+    .withMessage('비밀번호는 8자 이상 100자 이내여야 합니다.')
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])/)
+    .withMessage('비밀번호는 대소문자, 숫자, 특수문자를 포함해야 합니다.'),
   validateRequest,
 ];
 
@@ -59,14 +64,10 @@ const validateJoin = [
 const validateLogin = [
   body('username')
     .notEmpty()
-    .withMessage('값이 입력되지 않았습니다.')
-    .isString()
+    .withMessage('아이디를 입력해주세요.')
+    .trim()
     .withMessage('문자열이 아닙니다.'),
-  body('password')
-    .notEmpty()
-    .withMessage('값이 입력되지 않았습니다.')
-    .isString()
-    .withMessage('문자열이 아닙니다.'),
+  body('password').notEmpty().withMessage('비밀번호를 입력해주세요.'),
   validateRequest,
 ];
 
