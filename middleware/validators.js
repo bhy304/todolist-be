@@ -24,13 +24,9 @@ const authenticateToken = (req, res, next) => {
     req.user = decoded; // 검증된 사용자 정보를 req.user에 저장
     next();
   } catch (error) {
-    // return res.status(StatusCodes.FORBIDDEN).json({
-    //   message: error.message || '유효하지 않은 토큰입니다.',
-    // });
-
     const statusCode =
       error.code === 'TOKEN_EXPIRED'
-        ? StatusCodes.FORBIDDEN // 또는 403
+        ? StatusCodes.FORBIDDEN
         : StatusCodes.UNAUTHORIZED;
 
     return res.status(statusCode).json({
@@ -47,14 +43,17 @@ const validateRequest = (req, res, next) => {
 
   if (errors.isEmpty()) return next();
 
-  const formattedErrors = errors.array().map(error => ({
+  // errors.array()를 한 번만 호출하고 재사용
+  const errorArray = errors.array();
+
+  const formattedErrors = errorArray.map(error => ({
     field: error.path || error.param,
     message: error.msg,
     value: error.value,
   }));
 
   const errorMap = {};
-  errors.array().forEach(error => {
+  errorArray.forEach(error => {
     const field = error.path || error.param;
     if (!errorMap[field]) {
       errorMap[field] = error.msg;
@@ -66,7 +65,6 @@ const validateRequest = (req, res, next) => {
     message: '입력 값 검증에 실패했습니다.',
     errors: formattedErrors,
     errorMap: errorMap,
-    timestamp: new Date().toISOString(),
   });
 };
 

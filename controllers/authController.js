@@ -39,7 +39,6 @@ const login = (req, res) => {
         errorCode: 'DATABASE_ERROR',
         message: '서버 오류가 발생했습니다.',
       });
-      // return res.status(StatusCodes.BAD_REQUEST).end();
     }
 
     const [loginUser] = results;
