@@ -24,12 +24,8 @@ const authenticateToken = (req, res, next) => {
     req.user = decoded; // 검증된 사용자 정보를 req.user에 저장
     next();
   } catch (error) {
-    const statusCode =
-      error.code === 'TOKEN_EXPIRED'
-        ? StatusCodes.FORBIDDEN
-        : StatusCodes.UNAUTHORIZED;
-
-    return res.status(statusCode).json({
+    // 보안(토큰 만료와 토큰 무효를 구분하면 공격자에게 정보를 줄 수 있음)을 위해 모든 인증 에러는 401로 통일
+    return res.status(StatusCodes.UNAUTHORIZED).json({
       success: false,
       errorCode: error.code || 'AUTHENTICATION_ERROR',
       message: error.message || '인증에 실패했습니다.',
@@ -47,7 +43,7 @@ const validateRequest = (req, res, next) => {
     (acc, error) => {
       const field = error.path || error.param;
       acc.formattedErrors.push({
-        field: field,
+        field,
         message: error.msg,
         value: error.value,
       });
@@ -82,7 +78,7 @@ const validateJoin = [
     .withMessage('비밀번호를 입력해주세요.')
     .isLength({ min: 8, max: 20 })
     .withMessage('비밀번호는 8자 이상 20자 이내여야 합니다.')
-    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])/)
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#]).+$/)
     .withMessage('비밀번호는 대소문자, 숫자, 특수문자를 포함해야 합니다.'),
   validateRequest,
 ];
