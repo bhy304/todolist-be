@@ -14,6 +14,8 @@ const authenticateToken = (req, res, next) => {
 
     if (!token) {
       return res.status(StatusCodes.UNAUTHORIZED).json({
+        success: false,
+        errorCode: 'TOKEN_MISSING',
         message: '인증 토큰이 필요합니다.',
       });
     }
@@ -22,8 +24,19 @@ const authenticateToken = (req, res, next) => {
     req.user = decoded; // 검증된 사용자 정보를 req.user에 저장
     next();
   } catch (error) {
-    return res.status(StatusCodes.FORBIDDEN).json({
-      message: error.message || '유효하지 않은 토큰입니다.',
+    // return res.status(StatusCodes.FORBIDDEN).json({
+    //   message: error.message || '유효하지 않은 토큰입니다.',
+    // });
+
+    const statusCode =
+      error.code === 'TOKEN_EXPIRED'
+        ? StatusCodes.FORBIDDEN // 또는 403
+        : StatusCodes.UNAUTHORIZED;
+
+    return res.status(statusCode).json({
+      success: false,
+      errorCode: error.code || 'AUTHENTICATION_ERROR',
+      message: error.message || '인증에 실패했습니다.',
     });
   }
 };
@@ -34,9 +47,26 @@ const validateRequest = (req, res, next) => {
 
   if (errors.isEmpty()) return next();
 
+  const formattedErrors = errors.array().map(error => ({
+    field: error.path || error.param,
+    message: error.msg,
+    value: error.value,
+  }));
+
+  const errorMap = {};
+  errors.array().forEach(error => {
+    const field = error.path || error.param;
+    if (!errorMap[field]) {
+      errorMap[field] = error.msg;
+    }
+  });
+
   return res.status(StatusCodes.BAD_REQUEST).json({
     success: false,
-    errors: errors.array(),
+    message: '입력 값 검증에 실패했습니다.',
+    errors: formattedErrors,
+    errorMap: errorMap,
+    timestamp: new Date().toISOString(),
   });
 };
 
@@ -62,11 +92,7 @@ const validateJoin = [
 
 // 로그인 유효성 검사 규칙 정의
 const validateLogin = [
-  body('username')
-    .notEmpty()
-    .withMessage('아이디를 입력해주세요.')
-    .trim()
-    .withMessage('문자열이 아닙니다.'),
+  body('username').notEmpty().withMessage('아이디를 입력해주세요.').trim(),
   body('password').notEmpty().withMessage('비밀번호를 입력해주세요.'),
   validateRequest,
 ];
