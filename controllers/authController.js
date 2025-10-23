@@ -16,6 +16,8 @@ const join = (req, res) => {
     if (err) {
       if (err.code === 'ER_DUP_ENTRY') {
         return res.status(StatusCodes.CONFLICT).json({
+          success: false,
+          errorCode: 'DUPLICATE_USERNAME',
           message: '이미 존재하는 아이디입니다.',
         });
       }
