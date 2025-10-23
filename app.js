@@ -20,11 +20,9 @@ const todoRouter = require('./routes/todos');
 app.use(cors(corsOptions));
 // 미들웨어
 app.use(express.json());
-
 // 라우트
 app.use('/users', userRouter);
 app.use('/todos', todoRouter);
-
 // 서버 시작
 app.listen(PORT);
 
