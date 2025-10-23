@@ -43,22 +43,21 @@ const validateRequest = (req, res, next) => {
 
   if (errors.isEmpty()) return next();
 
-  // errors.array()를 한 번만 호출하고 재사용
-  const errorArray = errors.array();
-
-  const formattedErrors = errorArray.map(error => ({
-    field: error.path || error.param,
-    message: error.msg,
-    value: error.value,
-  }));
-
-  const errorMap = {};
-  errorArray.forEach(error => {
-    const field = error.path || error.param;
-    if (!errorMap[field]) {
-      errorMap[field] = error.msg;
-    }
-  });
+  const { formattedErrors, errorMap } = errors.array().reduce(
+    (acc, error) => {
+      const field = error.path || error.param;
+      acc.formattedErrors.push({
+        field: field,
+        message: error.msg,
+        value: error.value,
+      });
+      if (!acc.errorMap[field]) {
+        acc.errorMap[field] = error.msg;
+      }
+      return acc;
+    },
+    { formattedErrors: [], errorMap: {} }
+  );
 
   return res.status(StatusCodes.BAD_REQUEST).json({
     success: false,
@@ -81,8 +80,8 @@ const validateJoin = [
   body('password')
     .notEmpty()
     .withMessage('비밀번호를 입력해주세요.')
-    .isLength({ min: 8, max: 100 })
-    .withMessage('비밀번호는 8자 이상 100자 이내여야 합니다.')
+    .isLength({ min: 8, max: 20 })
+    .withMessage('비밀번호는 8자 이상 20자 이내여야 합니다.')
     .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])/)
     .withMessage('비밀번호는 대소문자, 숫자, 특수문자를 포함해야 합니다.'),
   validateRequest,
