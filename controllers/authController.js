@@ -16,11 +16,12 @@ const join = (req, res) => {
     if (err) {
       if (err.code === 'ER_DUP_ENTRY') {
         return res.status(StatusCodes.CONFLICT).json({
+          success: false,
+          errorCode: 'DUPLICATE_USERNAME',
           message: '이미 존재하는 아이디입니다.',
         });
       }
 
-      console.log(err);
       return res.status(StatusCodes.BAD_REQUEST).end();
     }
 
@@ -35,14 +36,20 @@ const login = (req, res) => {
   pool.query(sql, username, (err, results) => {
     if (err) {
       console.log(err);
-      return res.status(StatusCodes.BAD_REQUEST).end();
+      return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        errorCode: 'DATABASE_ERROR',
+        message: '서버 오류가 발생했습니다.',
+      });
     }
 
     const [loginUser] = results;
 
     if (!loginUser) {
       return res.status(StatusCodes.UNAUTHORIZED).json({
-        message: '아이디 또는 비밀번호가 틀렸습니다.',
+        success: false,
+        errorCode: 'INVALID_CREDENTIALS',
+        message: '아이디 또는 비밀번호가 일치하지 않습니다.',
       });
     }
 
@@ -52,7 +59,9 @@ const login = (req, res) => {
 
     if (loginUser.password !== hashPassword) {
       return res.status(StatusCodes.UNAUTHORIZED).json({
-        message: '아이디 또는 비밀번호가 틀렸습니다.',
+        success: false,
+        errorCode: 'INVALID_CREDENTIALS',
+        message: '아이디 또는 비밀번호가 일치하지 않습니다.',
       });
     }
 
@@ -62,6 +71,7 @@ const login = (req, res) => {
     });
 
     res.status(StatusCodes.OK).json({
+      success: true,
       message: '로그인되었습니다.',
       token: token,
       user: {

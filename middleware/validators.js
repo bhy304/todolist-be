@@ -14,6 +14,8 @@ const authenticateToken = (req, res, next) => {
 
     if (!token) {
       return res.status(StatusCodes.UNAUTHORIZED).json({
+        success: false,
+        errorCode: 'TOKEN_MISSING',
         message: '인증 토큰이 필요합니다.',
       });
     }
@@ -22,8 +24,11 @@ const authenticateToken = (req, res, next) => {
     req.user = decoded; // 검증된 사용자 정보를 req.user에 저장
     next();
   } catch (error) {
-    return res.status(StatusCodes.FORBIDDEN).json({
-      message: error.message || '유효하지 않은 토큰입니다.',
+    // 보안(토큰 만료와 토큰 무효를 구분하면 공격자에게 정보를 줄 수 있음)을 위해 모든 인증 에러는 401로 통일
+    return res.status(StatusCodes.UNAUTHORIZED).json({
+      success: false,
+      errorCode: error.code || 'AUTHENTICATION_ERROR',
+      message: error.message || '인증에 실패했습니다.',
     });
   }
 };
@@ -34,9 +39,27 @@ const validateRequest = (req, res, next) => {
 
   if (errors.isEmpty()) return next();
 
+  const { formattedErrors, errorMap } = errors.array().reduce(
+    (acc, error) => {
+      const field = error.path || error.param;
+      acc.formattedErrors.push({
+        field,
+        message: error.msg,
+        value: error.value,
+      });
+      if (!acc.errorMap[field]) {
+        acc.errorMap[field] = error.msg;
+      }
+      return acc;
+    },
+    { formattedErrors: [], errorMap: {} }
+  );
+
   return res.status(StatusCodes.BAD_REQUEST).json({
     success: false,
-    errors: errors.array(),
+    message: '입력 값 검증에 실패했습니다.',
+    errors: formattedErrors,
+    errorMap: errorMap,
   });
 };
 
@@ -44,29 +67,26 @@ const validateRequest = (req, res, next) => {
 const validateJoin = [
   body('username')
     .notEmpty()
-    .withMessage('값이 입력되지 않았습니다.')
-    .isString()
-    .withMessage('문자열이 아닙니다.'),
+    .withMessage('아이디를 입력해주세요.')
+    .trim()
+    .isLength({ min: 4, max: 20 })
+    .withMessage('아이디는 4자 이상 20자 이내여야 합니다.')
+    .matches(/^[a-zA-Z0-9_-]+$/)
+    .withMessage('아이디는 영문, 숫자, 밑줄(_), 대시(-)만 사용할 수 있습니다.'),
   body('password')
     .notEmpty()
-    .withMessage('값이 입력되지 않았습니다.')
-    .isString()
-    .withMessage('문자열이 아닙니다.'),
+    .withMessage('비밀번호를 입력해주세요.')
+    .isLength({ min: 8, max: 20 })
+    .withMessage('비밀번호는 8자 이상 20자 이내여야 합니다.')
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#]).+$/)
+    .withMessage('비밀번호는 대소문자, 숫자, 특수문자를 포함해야 합니다.'),
   validateRequest,
 ];
 
 // 로그인 유효성 검사 규칙 정의
 const validateLogin = [
-  body('username')
-    .notEmpty()
-    .withMessage('값이 입력되지 않았습니다.')
-    .isString()
-    .withMessage('문자열이 아닙니다.'),
-  body('password')
-    .notEmpty()
-    .withMessage('값이 입력되지 않았습니다.')
-    .isString()
-    .withMessage('문자열이 아닙니다.'),
+  body('username').notEmpty().withMessage('아이디를 입력해주세요.').trim(),
+  body('password').notEmpty().withMessage('비밀번호를 입력해주세요.'),
   validateRequest,
 ];
 
