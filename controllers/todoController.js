@@ -23,12 +23,12 @@ const getTodos = (req, res) => {
 };
 
 const createTodo = (req, res) => {
-  const { userId, content } = req.body;
+  const userId = req.user.id;
+  const { content } = req.body;
 
   const sql = `INSERT INTO todos(user_id,  content) VALUES (?, ?)`;
-  const values = [userId, content];
 
-  pool.query(sql, values, function (err, results) {
+  pool.query(sql, [userId, content], function (err, results) {
     if (err) {
       console.log(err);
       return res.status(StatusCodes.BAD_REQUEST).end();
@@ -41,6 +41,7 @@ const createTodo = (req, res) => {
 const updateTodo = (req, res) => {
   let { id } = req.params;
   id = parseInt(id);
+  const userId = req.user.id;
 
   const { content, is_done } = req.body;
 
@@ -64,8 +65,8 @@ const updateTodo = (req, res) => {
     values.push(is_done);
   }
 
-  sql = sql.slice(0, -2) + ` WHERE id = ?`;
-  values.push(id);
+  sql = sql.slice(0, -2) + ` WHERE id = ? AND user_id = ?`;
+  values.push(id, userId);
 
   pool.query(sql, values, function (err, results) {
     if (err) {
@@ -75,7 +76,7 @@ const updateTodo = (req, res) => {
 
     if (results.affectedRows === 0) {
       return res.status(StatusCodes.NOT_FOUND).json({
-        message: '해당 할일을 찾을 수 없습니다.',
+        message: '해당 할일을 찾을 수 없거나 수정 권한이 없습니다.',
       });
     } else {
       const selectSql = `SELECT * FROM todos WHERE id = ?`;
@@ -93,9 +94,10 @@ const updateTodo = (req, res) => {
 const deleteTodo = (req, res) => {
   let { id } = req.params;
   id = parseInt(id);
+  const userId = req.user.id;
 
-  const sql = `DELETE FROM todos WHERE id = ?`;
-  pool.query(sql, id, function (err, results) {
+  const sql = `DELETE FROM todos WHERE id = ? AND user_id = ?`;
+  pool.query(sql, [id, userId], function (err, results) {
     if (err) {
       console.log(err);
       return res.status(StatusCodes.BAD_REQUEST).end();
@@ -103,7 +105,7 @@ const deleteTodo = (req, res) => {
 
     if (results.affectedRows === 0) {
       return res.status(StatusCodes.NOT_FOUND).json({
-        message: '해당 할일을 찾을 수 없습니다.',
+        message: '해당 할일을 찾을 수 없거나 삭제 권한이 없습니다.',
       });
     } else {
       res.status(StatusCodes.OK).json({
