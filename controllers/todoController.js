@@ -1,4 +1,5 @@
 const pool = require('../mariadb');
+const { StatusCodes } = require('http-status-codes');
 
 const getTodos = (req, res) => {
   const userId = req.user.id; // 토큰에서 추출한 userId 사용
@@ -12,39 +13,40 @@ const getTodos = (req, res) => {
   pool.query(sql, [userId, userId], function (err, results) {
     if (err) {
       console.log(err);
-      return res.status(400).end();
+      return res.status(StatusCodes.BAD_REQUEST).end();
     }
     if (!results || results.length === 0) {
-      return res.status(204).end();
+      return res.status(StatusCodes.NO_CONTENT).end();
     }
-    return res.status(200).json(results);
+    return res.status(StatusCodes.OK).json(results);
   });
 };
 
 const createTodo = (req, res) => {
-  const { userId, content } = req.body;
+  const userId = req.user.id;
+  const { content } = req.body;
 
   const sql = `INSERT INTO todos(user_id,  content) VALUES (?, ?)`;
-  const values = [userId, content];
 
-  pool.query(sql, values, function (err, results) {
+  pool.query(sql, [userId, content], function (err, results) {
     if (err) {
       console.log(err);
-      return res.status(400).end();
+      return res.status(StatusCodes.BAD_REQUEST).end();
     }
 
-    return res.status(201).json(results);
+    return res.status(StatusCodes.CREATED).json(results);
   });
 };
 
 const updateTodo = (req, res) => {
   let { id } = req.params;
   id = parseInt(id);
+  const userId = req.user.id;
 
   const { content, is_done } = req.body;
 
   if (content === undefined && is_done === undefined) {
-    return res.status(400).json({
+    return res.status(StatusCodes.BAD_REQUEST).json({
       message: '수정할 내용을 입력해주세요.',
     });
   }
@@ -63,27 +65,27 @@ const updateTodo = (req, res) => {
     values.push(is_done);
   }
 
-  sql = sql.slice(0, -2) + ` WHERE id = ?`;
-  values.push(id);
+  sql = sql.slice(0, -2) + ` WHERE id = ? AND user_id = ?`;
+  values.push(id, userId);
 
   pool.query(sql, values, function (err, results) {
     if (err) {
       console.log(err);
-      return res.status(400).end();
+      return res.status(StatusCodes.BAD_REQUEST).end();
     }
 
     if (results.affectedRows === 0) {
-      return res.status(404).json({
-        message: '해당 할일을 찾을 수 없습니다.',
+      return res.status(StatusCodes.NOT_FOUND).json({
+        message: '해당 할일을 찾을 수 없거나 수정 권한이 없습니다.',
       });
     } else {
       const selectSql = `SELECT * FROM todos WHERE id = ?`;
       pool.query(selectSql, id, function (err, results) {
         if (err) {
           console.log(err);
-          return res.status(400).end();
+          return res.status(StatusCodes.BAD_REQUEST).end();
         }
-        res.status(200).json(results);
+        res.status(StatusCodes.OK).json(results);
       });
     }
   });
@@ -92,20 +94,21 @@ const updateTodo = (req, res) => {
 const deleteTodo = (req, res) => {
   let { id } = req.params;
   id = parseInt(id);
+  const userId = req.user.id;
 
-  const sql = `DELETE FROM todos WHERE id = ?`;
-  pool.query(sql, id, function (err, results) {
+  const sql = `DELETE FROM todos WHERE id = ? AND user_id = ?`;
+  pool.query(sql, [id, userId], function (err, results) {
     if (err) {
       console.log(err);
-      return res.status(400).end();
+      return res.status(StatusCodes.BAD_REQUEST).end();
     }
 
     if (results.affectedRows === 0) {
-      return res.status(404).json({
-        message: '해당 할일을 찾을 수 없습니다.',
+      return res.status(StatusCodes.NOT_FOUND).json({
+        message: '해당 할일을 찾을 수 없거나 삭제 권한이 없습니다.',
       });
     } else {
-      res.status(200).json({
+      res.status(StatusCodes.OK).json({
         message: '할 일이 삭제되었습니다.',
       });
     }
