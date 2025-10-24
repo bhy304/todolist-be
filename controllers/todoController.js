@@ -93,7 +93,7 @@ const updateTodo = (req, res) => {
       pool.query(
         'UPDATE todos SET content = ? WHERE id = ?',
         [content, id],
-        (err, results) => {
+        err => {
           if (err) {
             console.log(err);
             return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
