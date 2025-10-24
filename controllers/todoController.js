@@ -15,9 +15,7 @@ const getTodos = (req, res) => {
       console.log(err);
       return res.status(StatusCodes.BAD_REQUEST).end();
     }
-    if (!results || results.length === 0) {
-      return res.status(StatusCodes.NO_CONTENT).end();
-    }
+
     return res.status(StatusCodes.OK).json(results);
   });
 };
@@ -34,7 +32,24 @@ const createTodo = (req, res) => {
       return res.status(StatusCodes.BAD_REQUEST).end();
     }
 
-    return res.status(StatusCodes.CREATED).json(results);
+    // 생성된 할 일 조회
+    const selectSql = `SELECT * FROM todos WHERE id = ?`;
+    pool.query(selectSql, [results.insertId], function (err, todos) {
+      if (err) {
+        console.log(err);
+        return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+          success: false,
+          errorCode: 'DATABASE_ERROR',
+          message: '생성된 할 일 조회에 실패했습니다.',
+        });
+      }
+
+      return res.status(StatusCodes.CREATED).json({
+        success: true,
+        message: '할 일이 생성되었습니다.',
+        todo: todos[0], // 생성된 단일 할 일
+      });
+    });
   });
 };
 
