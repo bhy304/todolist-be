@@ -15,13 +15,7 @@ const getTodos = (req, res) => {
       console.log(err);
       return res.status(StatusCodes.BAD_REQUEST).end();
     }
-<<<<<<< HEAD
-    if (!results || results.length === 0) {
-      return res.status(StatusCodes.OK).json([]);
-    }
-=======
 
->>>>>>> c23670490ff8068467902132dc2ef5d690949e52
     return res.status(StatusCodes.OK).json(results);
   });
 };
@@ -38,18 +32,6 @@ const createTodo = (req, res) => {
       return res.status(StatusCodes.BAD_REQUEST).end();
     }
 
-<<<<<<< HEAD
-    // 방금 생성된 todo 조회
-    const selectSql = `SELECT id, user_id, content, is_done as isDone, created_at FROM todos WHERE id = ?`;
-    pool.query(selectSql, [results.insertId], function (err, todos) {
-      if (err) {
-        console.log(err);
-        return res.status(StatusCodes.BAD_REQUEST).end();
-      }
-      
-      return res.status(StatusCodes.CREATED).json({
-        todo: todos[0]
-=======
     // 생성된 할 일 조회
     const selectSql = `SELECT * FROM todos WHERE id = ?`;
     pool.query(selectSql, [results.insertId], function (err, todos) {
@@ -66,7 +48,6 @@ const createTodo = (req, res) => {
         success: true,
         message: '할 일이 생성되었습니다.',
         todo: todos[0], // 생성된 단일 할 일
->>>>>>> c23670490ff8068467902132dc2ef5d690949e52
       });
     });
   });
@@ -77,50 +58,66 @@ const updateTodo = (req, res) => {
   id = parseInt(id);
   const userId = req.user.id;
 
-  const { content, isDone } = req.body;
+  const { content } = req.body;
 
-  if (content === undefined && isDone === undefined) {
+  if (!content || content.trim() === '') {
     return res.status(StatusCodes.BAD_REQUEST).json({
+      success: false,
       message: '수정할 내용을 입력해주세요.',
     });
   }
 
-  let sql = `UPDATE todos SET `;
-  let values = [];
+  const [todos] = pool.query(
+    'SELECT * FROM todos WHERE id = ? AND user_id = ?',
+    [id, userId]
+  );
 
-  if (content !== undefined) {
-    sql += `content = ?, `;
-    values.push(content);
+  if (todos.legnth === 0) {
+    return res.status(StatusCodes.NOT_FOUND).json({
+      message: '해당 할일을 찾을 수 없거나 수정 권한이 없습니다.',
+    });
   }
 
-  if (isDone !== undefined) {
-    sql += `is_done = ?, `;
-    values.push(isDone);
+  pool.query('UPDATE todos SET content = ? WHERE id = ?', [content, id]);
+
+  const updatedTodo = {
+    ...todos[0],
+    content,
+    updated_at: new Date().toISOString(),
+  };
+
+  res.status(StatusCodes.OK).json({
+    success: true,
+    data: updatedTodo,
+  });
+};
+
+const toggleTodo = (req, res) => {
+  const id = parseInt(req.params.id);
+  const userId = req.user.id;
+
+  const [todos] = pool.query(
+    'SELECT * FROM todos WHERE id = ? AND user_id = ?',
+    [id, userId]
+  );
+
+  if (todos.length === 0) {
+    return res.status(StatusCodes.NOT_FOUND).json({
+      message: '해당 할일을 찾을 수 없거나 수정 권한이 없습니다.',
+    });
   }
 
-  sql = sql.slice(0, -2) + ` WHERE id = ? AND user_id = ?`;
-  values.push(id, userId);
+  const currentTodo = todos[0];
+  const newIsDone = !currentTodo.is_done;
 
-  pool.query(sql, values, function (err, results) {
-    if (err) {
-      console.log(err);
-      return res.status(StatusCodes.BAD_REQUEST).end();
-    }
+  pool.query('UPDATE todos SET is_done = ? WHERE id = ?', [newIsDone, id]);
 
-    if (results.affectedRows === 0) {
-      return res.status(StatusCodes.NOT_FOUND).json({
-        message: '해당 할일을 찾을 수 없거나 수정 권한이 없습니다.',
-      });
-    } else {
-      const selectSql = `SELECT id, user_id, content, is_done as isDone, created_at FROM todos WHERE id = ?`;
-      pool.query(selectSql, [id], function (err, todos) {
-        if (err) {
-          console.log(err);
-          return res.status(StatusCodes.BAD_REQUEST).end();
-        }
-        res.status(StatusCodes.OK).json(todos[0]);
-      });
-    }
+  res.status(StatusCodes.OK).json({
+    success: true,
+    data: {
+      id: parseInt(id),
+      is_done: newIsDone,
+    },
   });
 };
 
@@ -152,5 +149,6 @@ module.exports = {
   getTodos,
   createTodo,
   updateTodo,
+  toggleTodo,
   deleteTodo,
 };
