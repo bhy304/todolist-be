@@ -5,6 +5,7 @@ const {
   authenticateToken,
   validateCreateTodo,
   validateUpdateTodo,
+  validateToggleTodo,
   validateDeleteTodo,
 } = require('../middleware/validators');
 
@@ -19,5 +20,12 @@ router
   .route('/:id')
   .put(authenticateToken, validateUpdateTodo, todoController.updateTodo)
   .delete(authenticateToken, validateDeleteTodo, todoController.deleteTodo);
+
+router.patch(
+  '/:id/toggle',
+  authenticateToken,
+  validateToggleTodo,
+  todoController.toggleTodo
+);
 
 module.exports = router;

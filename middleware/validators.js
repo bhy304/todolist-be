@@ -102,13 +102,19 @@ const validateCreateTodo = [
 
 // 할일 수정
 const validateUpdateTodo = [
-  param('id').notEmpty().withMessage('할 일 id 필요해'),
+  param('id').notEmpty().withMessage('할 일 id가 필요합니다.'),
+  validateRequest,
+];
+
+// 할일 완료 토글
+const validateToggleTodo = [
+  param('id').notEmpty().withMessage('할 일 id가 필요합니다.'),
   validateRequest,
 ];
 
 // 할일 삭제
 const validateDeleteTodo = [
-  param('id').notEmpty().withMessage('할일 id 필요'),
+  param('id').notEmpty().withMessage('할 일 id가 필요합니다.'),
   validateRequest,
 ];
 
@@ -118,5 +124,6 @@ module.exports = {
   validateLogin,
   validateCreateTodo,
   validateUpdateTodo,
+  validateToggleTodo,
   validateDeleteTodo,
 };
