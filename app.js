@@ -15,7 +15,7 @@ const corsOptions = {
 
 const userRouter = require('./routes/users');
 const todoRouter = require('./routes/todos');
-
+const teamRouter = require('./routes/teams');
 // CORS 설정 미들웨어
 app.use(cors(corsOptions));
 // 미들웨어
@@ -23,6 +23,7 @@ app.use(express.json());
 // 라우트
 app.use('/users', userRouter);
 app.use('/todos', todoRouter);
+app.use('/teams', teamRouter);
 // 서버 시작
 app.listen(PORT);
 
