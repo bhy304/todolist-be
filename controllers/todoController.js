@@ -4,13 +4,11 @@ const { StatusCodes } = require('http-status-codes');
 const getTodos = (req, res) => {
   const userId = req.user.id;
 
-  const sql = `SELECT DISTINCT t.*
-        FROM todos t
-        LEFT JOIN team_members tm ON t.team_id = tm.teams_id AND tm.users_id = ?
-        WHERE t.user_id = ? OR tm.users_id IS NOT NULL
-        ORDER BY t.created_at DESC`;
+  const sql = `SELECT * FROM todos
+                WHERE user_id = ? AND team_id IS NULL
+                ORDER BY created_at DESC`;
 
-  pool.query(sql, [userId, userId], function (err, results) {
+  pool.query(sql, [userId], function (err, results) {
     if (err) {
       console.log(err);
       return res.status(StatusCodes.BAD_REQUEST).end();

@@ -18,7 +18,7 @@ const getTeamTodos = (req, res) => {
 
 const createTeamTodo = (req, res) => {
   const userId = req.user.id;
-  const id = req.params.id;
+  const id = req.params.id; // team_id
   const { content } = req.body;
 
   const sql = `INSERT INTO todos(user_id, team_id, content) VALUES (?, ?, ?)`;

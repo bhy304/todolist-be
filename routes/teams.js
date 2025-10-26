@@ -51,10 +51,4 @@ router.get(
   teamController.getTeamMembers
 );
 
-// 팀 할일 전체 조회
-// 팀 할일 등록
-// 팀 할일 삭제
-// 팀 할일 수정
-// 팀 할일 완료 체크 (is_done: 1)
-
 module.exports = router;

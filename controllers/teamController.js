@@ -81,7 +81,7 @@ const getTeams = (req, res) => {
               FROM team_members tm
               INNER JOIN teams t ON tm.teams_id = t.id
               WHERE tm.users_id = ?
-              ORDER BY t.teamname ASC`;
+              ORDER BY t.id ASC`;
 
   pool.query(sql, userId, (err, results) => {
     if (err) {
