@@ -8,7 +8,7 @@ const getTodos = (req, res) => {
         FROM todos t
         LEFT JOIN team_members tm ON t.team_id = tm.teams_id AND tm.users_id = ?
         WHERE t.user_id = ? OR tm.users_id IS NOT NULL
-        ORDER BY t.created_at DESC;`;
+        ORDER BY t.created_at DESC`;
 
   pool.query(sql, [userId, userId], function (err, results) {
     if (err) {
