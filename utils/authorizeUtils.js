@@ -5,7 +5,7 @@ if (!process.env.JWT_SECRET) {
 }
 
 const JWT_TOKEN_SECRET = process.env.JWT_SECRET;
-const ACCESS_TOKEN_EXPIRES_IN = '15m';
+const ACCESS_TOKEN_EXPIRES_IN = '1h';
 
 const createToken = payload => {
   return jwt.sign(payload, JWT_TOKEN_SECRET, {
