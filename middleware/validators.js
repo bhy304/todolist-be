@@ -118,6 +118,34 @@ const validateDeleteTodo = [
   validateRequest,
 ];
 
+// 팀 생성
+const validateCreateTeam = [
+  body('teamname').notEmpty().withMessage('팀 이름을 입력해주세요.'),
+  validateRequest,
+];
+// 팀 삭제
+const validateDeleteTeam = [
+  param('id').notEmpty().withMessage('팀 id가 필요합니다.'),
+  validateRequest,
+];
+// 팀원 초대
+const validateInviteTeamMember = [
+  param('id').notEmpty().withMessage('팀 id가 필요합니다.'),
+  body('username').notEmpty().withMessage('팀원 이름을 입력해주세요.'),
+  validateRequest,
+];
+// 팀원 삭제
+const validateDeleteTeamMember = [
+  param('teamId').notEmpty().withMessage('팀 id가 필요합니다.'),
+  param('memberId').notEmpty().withMessage('팀원 id가 필요합니다.'),
+  validateRequest,
+];
+// 팀원 목록 조회
+const validateGetTeamMembers = [
+  param('id').notEmpty().withMessage('팀 id가 필요합니다.'),
+  validateRequest,
+];
+
 module.exports = {
   authenticateToken,
   validateJoin,
@@ -126,4 +154,9 @@ module.exports = {
   validateUpdateTodo,
   validateToggleTodo,
   validateDeleteTodo,
+  validateCreateTeam,
+  validateDeleteTeam,
+  validateInviteTeamMember,
+  validateDeleteTeamMember,
+  validateGetTeamMembers,
 };
