@@ -27,28 +27,29 @@ router.delete(
   validateDeleteTeam,
   teamController.deleteTeam
 );
-// 팀 초대 (팀원의 아이디를 입력해서 팀원 초대)
+// userId가 가지고 있는 팀 목록
+router.get('/', authenticateToken, teamController.getTeams);
+
+// 팀원 초대 (특정 팀에 팀원 추가)
 router.post(
-  '/invite',
+  '/:id/members',
   authenticateToken,
   validateInviteTeamMember,
   teamController.inviteTeamMember
 );
-// userId가 가지고 있는 팀 목록
-router.get('/', authenticateToken, teamController.getTeams);
-// 팀원 삭제
-router.delete(
-  '/members/:id',
-  authenticateToken,
-  validateDeleteTeamMember,
-  teamController.deleteTeamMember
-);
 // 팀원 목록 조회
 router.get(
-  '/members/:id',
+  '/:id/members',
   authenticateToken,
   validateGetTeamMembers,
   teamController.getTeamMembers
+);
+// 팀원 삭제 (특정 팀에서 특정 팀원 삭제)
+router.delete(
+  '/:teamId/members/:memberId',
+  authenticateToken,
+  validateDeleteTeamMember,
+  teamController.deleteTeamMember
 );
 
 module.exports = router;

@@ -130,12 +130,14 @@ const validateDeleteTeam = [
 ];
 // 팀원 초대
 const validateInviteTeamMember = [
+  param('id').notEmpty().withMessage('팀 id가 필요합니다.'),
   body('username').notEmpty().withMessage('팀원 이름을 입력해주세요.'),
   validateRequest,
 ];
 // 팀원 삭제
 const validateDeleteTeamMember = [
-  param('id').notEmpty().withMessage('팀원의 id가 필요합니다.'),
+  param('teamId').notEmpty().withMessage('팀 id가 필요합니다.'),
+  param('memberId').notEmpty().withMessage('팀원 id가 필요합니다.'),
   validateRequest,
 ];
 // 팀원 목록 조회
