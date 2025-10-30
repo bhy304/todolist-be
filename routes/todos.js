@@ -5,27 +5,27 @@ const {
   authenticateToken,
   validateCreateTodo,
   validateUpdateTodo,
-  validateToggleTodo,
   validateDeleteTodo,
 } = require('../middleware/validators');
 
-router.use(express.json());
-
-router
-  .route('/')
-  .get(authenticateToken, todoController.getTodos)
-  .post(authenticateToken, validateCreateTodo, todoController.createTodo);
-
-router
-  .route('/:id')
-  .put(authenticateToken, validateUpdateTodo, todoController.updateTodo)
-  .delete(authenticateToken, validateDeleteTodo, todoController.deleteTodo);
-
-router.patch(
-  '/:id/toggle',
+router.get('/', authenticateToken, todoController.getTodos);
+router.post(
+  '/',
   authenticateToken,
-  validateToggleTodo,
-  todoController.toggleTodo
+  validateCreateTodo,
+  todoController.createTodo
+);
+router.put(
+  '/:id',
+  authenticateToken,
+  validateUpdateTodo,
+  todoController.updateTodo
+);
+router.delete(
+  '/:id',
+  authenticateToken,
+  validateDeleteTodo,
+  todoController.deleteTodo
 );
 
 module.exports = router;
