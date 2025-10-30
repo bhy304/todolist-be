@@ -1,5 +1,6 @@
 const pool = require('../mariadb');
 const { StatusCodes } = require('http-status-codes');
+const { handleError } = require('../middleware/errorHandler');
 
 const getTodos = async (req, res) => {
   try {
@@ -36,19 +37,13 @@ const createTodo = async (req, res) => {
       todo: results[0],
     });
   } catch (error) {
-    console.log(error);
-    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-      success: false,
-      errorCode: 'DATABASE_ERROR',
-      message: '생성된 할 일 조회에 실패했습니다.',
-    });
+    handleError(error, res);
   }
 };
 
 const updateTodo = async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    const userId = req.user.id;
     const { content, is_done } = req.body;
 
     const [results] = await pool.query(
@@ -71,22 +66,16 @@ const updateTodo = async (req, res) => {
       message: '할 일이 수정되었습니다.',
     });
   } catch (error) {
-    console.log(error);
-    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-      success: false,
-      errorCode: 'DATABASE_ERROR',
-      message: '서버 오류가 발생했습니다.',
-    });
+    handleError(error, res);
   }
 };
 
 const deleteTodo = async (req, res) => {
   try {
-    const userId = req.user.id;
     const id = parseInt(req.params.id);
 
     const sql = `DELETE FROM todos WHERE id = ?`;
-    const [results] = await pool.query(sql, [id, userId]);
+    const [results] = await pool.query(sql, [id]);
 
     if (results.affectedRows === 0) {
       return res.status(StatusCodes.NOT_FOUND).json({
