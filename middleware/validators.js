@@ -2,15 +2,10 @@ const { body, param, validationResult } = require('express-validator');
 const { StatusCodes } = require('http-status-codes');
 const { verifyToken } = require('../utils/authorizeUtils');
 
-/**
- * JWT 토큰을 검증하는 미들웨어
- * Authorization 헤더에서 Bearer 토큰을 추출하여 검증하고,
- * 검증된 사용자 정보를 req.user에 저장합니다.
- */
 const authenticateToken = (req, res, next) => {
   try {
     const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+    const token = authHeader && authHeader.split(' ')[1];
 
     if (!token) {
       return res.status(StatusCodes.UNAUTHORIZED).json({
@@ -21,10 +16,9 @@ const authenticateToken = (req, res, next) => {
     }
 
     const decoded = verifyToken(token);
-    req.user = decoded; // 검증된 사용자 정보를 req.user에 저장
+    req.user = decoded;
     next();
   } catch (error) {
-    // 보안(토큰 만료와 토큰 무효를 구분하면 공격자에게 정보를 줄 수 있음)을 위해 모든 인증 에러는 401로 통일
     return res.status(StatusCodes.UNAUTHORIZED).json({
       success: false,
       errorCode: error.code || 'AUTHENTICATION_ERROR',
@@ -33,7 +27,6 @@ const authenticateToken = (req, res, next) => {
   }
 };
 
-// 유효성 검사 결과를 확인하는 미들웨어
 const validateRequest = (req, res, next) => {
   const errors = validationResult(req);
 
@@ -63,7 +56,6 @@ const validateRequest = (req, res, next) => {
   });
 };
 
-// 회원가입 유효성 검사 규칙 정의
 const validateJoin = [
   body('username')
     .notEmpty()
@@ -83,14 +75,12 @@ const validateJoin = [
   validateRequest,
 ];
 
-// 로그인 유효성 검사 규칙 정의
 const validateLogin = [
   body('username').notEmpty().withMessage('아이디를 입력해주세요.').trim(),
   body('password').notEmpty().withMessage('비밀번호를 입력해주세요.'),
   validateRequest,
 ];
 
-// 할일 등록
 const validateCreateTodo = [
   body('content')
     .notEmpty()
@@ -100,47 +90,47 @@ const validateCreateTodo = [
   validateRequest,
 ];
 
-// 할일 수정
 const validateUpdateTodo = [
   param('id').notEmpty().withMessage('할 일 id가 필요합니다.'),
+  body('content')
+    .notEmpty()
+    .withMessage('수정할 내용을 입력해주세요.')
+    .isLength({ max: 255 })
+    .withMessage('제목은 255자 이내로 입력해주세요'),
+  body('is_done')
+    .optional()
+    .isBoolean()
+    .withMessage('is_done은 boolean 값이어야 합니다.'),
   validateRequest,
 ];
 
-// 할일 완료 토글
-const validateToggleTodo = [
-  param('id').notEmpty().withMessage('할 일 id가 필요합니다.'),
-  validateRequest,
-];
-
-// 할일 삭제
 const validateDeleteTodo = [
   param('id').notEmpty().withMessage('할 일 id가 필요합니다.'),
   validateRequest,
 ];
 
-// 팀 생성
 const validateCreateTeam = [
   body('teamname').notEmpty().withMessage('팀 이름을 입력해주세요.'),
   validateRequest,
 ];
-// 팀 삭제
+
 const validateDeleteTeam = [
   param('id').notEmpty().withMessage('팀 id가 필요합니다.'),
   validateRequest,
 ];
-// 팀원 초대
+
 const validateInviteTeamMember = [
   param('id').notEmpty().withMessage('팀 id가 필요합니다.'),
   body('username').notEmpty().withMessage('팀원 이름을 입력해주세요.'),
   validateRequest,
 ];
-// 팀원 삭제
+
 const validateDeleteTeamMember = [
   param('teamId').notEmpty().withMessage('팀 id가 필요합니다.'),
   param('memberId').notEmpty().withMessage('팀원 id가 필요합니다.'),
   validateRequest,
 ];
-// 팀원 목록 조회
+
 const validateGetTeamMembers = [
   param('id').notEmpty().withMessage('팀 id가 필요합니다.'),
   validateRequest,
@@ -152,7 +142,6 @@ module.exports = {
   validateLogin,
   validateCreateTodo,
   validateUpdateTodo,
-  validateToggleTodo,
   validateDeleteTodo,
   validateCreateTeam,
   validateDeleteTeam,
