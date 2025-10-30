@@ -3,7 +3,6 @@ const router = express.Router();
 const authController = require('../controllers/authController');
 const { validateJoin, validateLogin } = require('../middleware/validators');
 
-router.use(express.json());
 
 router.post('/join', validateJoin, authController.join);
 router.post('/login', validateLogin, authController.login);
