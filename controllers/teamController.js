@@ -97,13 +97,12 @@ const getTeams = async (req, res) => {
   try {
     const userId = req.user.id;
     const [results] = await pool.query(
-      `SELECT t.id, t.teamname,
-        CASE WHEN t.owner_id = ? THEN true ELSE false END as is_owner
+      `SELECT t.id, t.teamname, t.owner_id
         FROM team_members tm
         INNER JOIN teams t ON tm.teams_id = t.id
         WHERE tm.users_id = ?
         ORDER BY t.id ASC`,
-      [userId, userId]
+      [userId]
     );
 
     return res.status(StatusCodes.OK).json({

@@ -9,11 +9,10 @@ const getTodos = async (req, res) => {
 
     const sql = `SELECT * FROM todos
                   WHERE user_id = ? AND team_id ${teamId ? '= ?' : 'IS NULL'}
-                  ORDER BY id DESC`;
+                  ORDER BY id ASC`;
     const values = teamId ? [userId, teamId] : [userId];
     const [results] = await pool.query(sql, values);
 
-    console.log(results);
     return res.status(StatusCodes.OK).json(results);
   } catch (error) {
     console.log(error);
@@ -58,8 +57,6 @@ const updateTodo = async (req, res) => {
         message: '해당 할일을 찾을 수 없거나 수정 권한이 없습니다.',
       });
     }
-
-    console.log(results);
 
     return res.status(StatusCodes.OK).json({
       success: true,
