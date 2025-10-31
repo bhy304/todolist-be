@@ -1,49 +1,44 @@
 const pool = require('../mariadb');
+const crypto = require('crypto');
 const { StatusCodes } = require('http-status-codes');
 const { createToken } = require('../utils/authorizeUtils');
-const crypto = require('crypto');
+const { handleError } = require('../middleware/errorHandler');
 
-const join = (req, res) => {
-  const { username, password } = req.body;
-  const sql = 'INSERT INTO users (username, password, salt) VALUES (?, ?, ?)';
+const join = async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    const sql = 'INSERT INTO users (username, password, salt) VALUES (?, ?, ?)';
 
-  const salt = crypto.randomBytes(16).toString('base64');
-  const hashPassword = crypto
-    .pbkdf2Sync(password, salt, 10000, 16, 'sha512')
-    .toString('base64');
+    const salt = crypto.randomBytes(16).toString('base64');
+    const hashPassword = crypto
+      .pbkdf2Sync(password, salt, 10000, 16, 'sha512')
+      .toString('base64');
 
-  pool.query(sql, [username, hashPassword, salt], (err, results) => {
-    if (err) {
-      if (err.code === 'ER_DUP_ENTRY') {
-        return res.status(StatusCodes.CONFLICT).json({
-          success: false,
-          errorCode: 'DUPLICATE_USERNAME',
-          message: '이미 존재하는 아이디입니다.',
-        });
-      }
+    await pool.query(sql, [username, hashPassword, salt]);
 
-      return res.status(StatusCodes.BAD_REQUEST).end();
-    }
-
-    res.status(StatusCodes.CREATED).json(results);
-  });
-};
-
-const login = (req, res) => {
-  const { username, password } = req.body;
-  const sql = 'SELECT * FROM users WHERE username = ?';
-
-  pool.query(sql, username, (err, results) => {
-    if (err) {
-      console.log(err);
-      return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+    res.status(StatusCodes.CREATED).json({
+      success: true,
+      message: '회원가입되었습니다.',
+    });
+  } catch (error) {
+    if (error.code === 'ER_DUP_ENTRY') {
+      return res.status(StatusCodes.CONFLICT).json({
         success: false,
-        errorCode: 'DATABASE_ERROR',
-        message: '서버 오류가 발생했습니다.',
+        errorCode: 'DUPLICATE_USERNAME',
+        message: '이미 존재하는 아이디입니다.',
       });
     }
 
-    const [loginUser] = results;
+    return res.status(StatusCodes.BAD_REQUEST).end();
+  }
+};
+
+const login = async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    const sql = 'SELECT * FROM users WHERE username = ?';
+
+    const [[loginUser]] = await pool.query(sql, [username]);
 
     if (!loginUser) {
       return res.status(StatusCodes.UNAUTHORIZED).json({
@@ -70,7 +65,7 @@ const login = (req, res) => {
       username: loginUser.username,
     });
 
-    res.status(StatusCodes.OK).json({
+    return res.status(StatusCodes.OK).json({
       success: true,
       message: '로그인되었습니다.',
       token: token,
@@ -79,7 +74,9 @@ const login = (req, res) => {
         username: loginUser.username,
       },
     });
-  });
+  } catch (error) {
+    handleError(error, res);
+  }
 };
 
 module.exports = { join, login };

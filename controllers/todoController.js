@@ -1,218 +1,99 @@
 const pool = require('../mariadb');
 const { StatusCodes } = require('http-status-codes');
+const { handleError } = require('../middleware/errorHandler');
 
-const getTodos = (req, res) => {
-  const userId = req.user.id;
+const getTodos = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const teamId = req.query.teamId;
 
-  const sql = `SELECT * FROM todos
-                WHERE user_id = ? AND team_id IS NULL
-                ORDER BY created_at DESC`;
-
-  pool.query(sql, [userId], function (err, results) {
-    if (err) {
-      console.log(err);
-      return res.status(StatusCodes.BAD_REQUEST).end();
-    }
+    const sql = `SELECT * FROM todos
+                  WHERE user_id = ? AND team_id ${teamId ? '= ?' : 'IS NULL'}
+                  ORDER BY id ASC`;
+    const values = teamId ? [userId, teamId] : [userId];
+    const [results] = await pool.query(sql, values);
 
     return res.status(StatusCodes.OK).json(results);
-  });
-};
-
-const createTodo = (req, res) => {
-  const userId = req.user.id;
-  const { content } = req.body;
-
-  const sql = `INSERT INTO todos(user_id, content, is_done) VALUES (?, ?, 0)`;
-
-  pool.query(sql, [userId, content], function (err, results) {
-    if (err) {
-      console.log(err);
-      return res.status(StatusCodes.BAD_REQUEST).end();
-    }
-
-    // 생성된 할 일 조회
-    const selectSql = `SELECT * FROM todos WHERE id = ?`;
-    pool.query(selectSql, [results.insertId], function (err, todos) {
-      if (err) {
-        console.log(err);
-        return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-          success: false,
-          errorCode: 'DATABASE_ERROR',
-          message: '생성된 할 일 조회에 실패했습니다.',
-        });
-      }
-
-      return res.status(StatusCodes.CREATED).json({
-        success: true,
-        message: '할 일이 생성되었습니다.',
-        todo: todos[0], // 생성된 단일 할 일
-      });
-    });
-  });
-};
-
-const updateTodo = (req, res) => {
-  let { id } = req.params;
-  id = parseInt(id);
-  const userId = req.user.id;
-
-  const { content } = req.body;
-
-  if (!content || content.trim() === '') {
-    return res.status(StatusCodes.BAD_REQUEST).json({
-      success: false,
-      message: '수정할 내용을 입력해주세요.',
-    });
+  } catch (error) {
+    console.log(error);
+    return res.status(StatusCodes.BAD_REQUEST).end();
   }
-
-  // 1. 권한 확인
-  pool.query(
-    'SELECT * FROM todos WHERE id = ? AND user_id = ?',
-    [id, userId],
-    (err, todos) => {
-      if (err) {
-        console.log(err);
-        return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-          success: false,
-          errorCode: 'DATABASE_ERROR',
-          message: '서버 오류가 발생했습니다.',
-        });
-      }
-
-      if (todos.length === 0) {
-        return res.status(StatusCodes.NOT_FOUND).json({
-          success: false,
-          errorCode: 'NOT_FOUND',
-          message: '해당 할일을 찾을 수 없거나 수정 권한이 없습니다.',
-        });
-      }
-
-      // 2. 업데이트 실행
-      pool.query(
-        'UPDATE todos SET content = ? WHERE id = ?',
-        [content, id],
-        err => {
-          if (err) {
-            console.log(err);
-            return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-              success: false,
-              errorCode: 'DATABASE_ERROR',
-              message: '할 일 수정에 실패했습니다.',
-            });
-          }
-
-          // 3. 수정된 할 일 조회
-          pool.query(
-            'SELECT * FROM todos WHERE id = ?',
-            [id],
-            (err, updatedTodos) => {
-              if (err) {
-                console.log(err);
-                return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-                  success: false,
-                  errorCode: 'DATABASE_ERROR',
-                  message: '수정된 할 일 조회에 실패했습니다.',
-                });
-              }
-
-              res.status(StatusCodes.OK).json({
-                success: true,
-                message: '할 일이 수정되었습니다.',
-                todo: updatedTodos[0],
-              });
-            }
-          );
-        }
-      );
-    }
-  );
 };
 
-const toggleTodo = (req, res) => {
-  const id = parseInt(req.params.id);
-  const userId = req.user.id;
+const createTodo = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const teamId = req.query.teamId;
+    const { content } = req.body;
 
-  // 1. 권한 확인 및 현재 상태 조회
-  pool.query(
-    'SELECT * FROM todos WHERE id = ? AND user_id = ?',
-    [id, userId],
-    (err, todos) => {
-      if (err) {
-        console.log(err);
-        return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-          success: false,
-          errorCode: 'DATABASE_ERROR',
-          message: '서버 오류가 발생했습니다.',
-        });
-      }
+    const sql = `INSERT INTO todos(user_id, team_id, content) VALUES (?, ${teamId ? '?' : 'NULL'}, ?) RETURNING *`;
+    const values = teamId ? [userId, teamId, content] : [userId, content];
+    const [results] = await pool.query(sql, values);
 
-      if (todos.length === 0) {
-        return res.status(StatusCodes.NOT_FOUND).json({
-          success: false,
-          errorCode: 'NOT_FOUND',
-          message: '해당 할일을 찾을 수 없거나 수정 권한이 없습니다.',
-        });
-      }
-
-      const currentTodo = todos[0];
-      const newIsDone = !currentTodo.is_done;
-
-      // 2. 상태 업데이트
-      pool.query(
-        'UPDATE todos SET is_done = ? WHERE id = ?',
-        [newIsDone, id],
-        err => {
-          if (err) {
-            console.log(err);
-            return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-              success: false,
-              errorCode: 'DATABASE_ERROR',
-              message: '상태 변경에 실패했습니다.',
-            });
-          }
-
-          res.status(StatusCodes.OK).json({
-            success: true,
-            message: '완료 상태가 변경되었습니다.',
-            todo: {
-              id: parseInt(id),
-              is_done: newIsDone,
-            },
-          });
-        }
-      );
-    }
-  );
+    return res.status(StatusCodes.CREATED).json({
+      success: true,
+      message: '할 일이 생성되었습니다.',
+      todo: results[0],
+    });
+  } catch (error) {
+    handleError(error, res);
+  }
 };
 
-const deleteTodo = (req, res) => {
-  let { id } = req.params;
-  id = parseInt(id);
-  const userId = req.user.id;
+const updateTodo = async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const { content, is_done } = req.body;
 
-  const sql = `DELETE FROM todos WHERE id = ? AND user_id = ?`;
-  pool.query(sql, [id, userId], function (err, results) {
-    if (err) {
-      console.log(err);
-      return res.status(StatusCodes.BAD_REQUEST).end();
-    }
+    const [results] = await pool.query(
+      'UPDATE todos SET content = ?, is_done = ? WHERE id = ?',
+      [content, is_done, id]
+    );
 
     if (results.affectedRows === 0) {
       return res.status(StatusCodes.NOT_FOUND).json({
-        message: '해당 할일을 찾을 수 없거나 삭제 권한이 없습니다.',
-      });
-    } else {
-      res.status(StatusCodes.OK).json({
-        message: '할 일이 삭제되었습니다.',
+        success: false,
+        errorCode: 'NOT_FOUND',
+        message: '해당 할일을 찾을 수 없거나 수정 권한이 없습니다.',
       });
     }
-  });
+
+    return res.status(StatusCodes.OK).json({
+      success: true,
+      message: '할 일이 수정되었습니다.',
+    });
+  } catch (error) {
+    handleError(error, res);
+  }
+};
+
+const deleteTodo = async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+
+    const sql = `DELETE FROM todos WHERE id = ?`;
+    const [results] = await pool.query(sql, [id]);
+
+    if (results.affectedRows === 0) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        success: false,
+        errorCode: 'NOT_FOUND',
+        message: '해당 할일을 찾을 수 없거나 삭제 권한이 없습니다.',
+      });
+    }
+
+    return res.status(StatusCodes.OK).json({
+      message: '할 일이 삭제되었습니다.',
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(StatusCodes.BAD_REQUEST).end();
+  }
 };
 
 module.exports = {
   getTodos,
   createTodo,
   updateTodo,
-  toggleTodo,
   deleteTodo,
 };

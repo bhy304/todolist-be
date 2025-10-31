@@ -5,28 +5,26 @@ const app = express();
 const PORT = process.env.PORT || 8080;
 
 const corsOptions = {
-  origin: ['http://localhost:3000', 'https://todolist-fe-puce.vercel.app'], // 프론트엔드 도메인
-  credentials: true, // 쿠키 전달을 위해 필요
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'], // 허용할 HTTP 메서드
-  allowedHeaders: ['Content-Type', 'Authorization'], // 허용할 헤더
-  exposedHeaders: ['Content-Length', 'X-Total-Count'], // 클라이언트에 노출할 헤더
-  maxAge: 3600, // preflight 요청 결과를 캐시하는 시간 (초)
+  origin: ['http://localhost:3000', 'https://todolist-fe-puce.vercel.app'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  exposedHeaders: ['Content-Length', 'X-Total-Count'],
+  maxAge: 3600,
 };
 
 const userRouter = require('./routes/users');
 const todoRouter = require('./routes/todos');
-const teamTodoRouter = require('./routes/teamTodos');
 const teamRouter = require('./routes/teams');
-// CORS 설정 미들웨어
+
 app.use(cors(corsOptions));
-// 미들웨어
+
 app.use(express.json());
-// 라우트
+
 app.use('/users', userRouter);
 app.use('/todos', todoRouter);
-app.use('/team/todos', teamTodoRouter);
 app.use('/teams', teamRouter);
-// 서버 시작
+
 app.listen(PORT);
 
 module.exports = app;
