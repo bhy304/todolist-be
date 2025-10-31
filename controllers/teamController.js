@@ -49,13 +49,11 @@ const deleteTeam = async (req, res) => {
   try {
     await connection.beginTransaction();
 
-    // 팀 삭제 전에 팀 소유자 확인
     const [checkResult] = await connection.query(
       'SELECT owner_id FROM teams WHERE id = ?',
       [teamId]
     );
 
-    // 팀이 존재하지 않음
     if (checkResult.length === 0) {
       await connection.rollback();
       return res.status(StatusCodes.NOT_FOUND).json({
@@ -65,7 +63,6 @@ const deleteTeam = async (req, res) => {
       });
     }
 
-    // 소유자가 아님
     if (checkResult[0].owner_id !== userId) {
       await connection.rollback();
       return res.status(StatusCodes.FORBIDDEN).json({
@@ -75,7 +72,6 @@ const deleteTeam = async (req, res) => {
       });
     }
 
-    // 팀이 삭제되면 팀에 속한 모든 팀원과 팀 할일도 함께 삭제되어야 함
     const [results] = await connection.query('DELETE FROM teams WHERE id = ?', [
       teamId,
     ]);
@@ -153,14 +149,12 @@ const inviteTeamMember = async (req, res) => {
   }
 };
 
-// 팀원 삭제 (팀 소유자만 팀원을 삭제할 수 있음, 단 자기 자신은 삭제 불가)
 const deleteTeamMember = async (req, res) => {
   try {
-    const userId = req.user.id; // 요청한 사용자 (팀 소유자인지 확인 필요)
+    const userId = req.user.id;
     const teamId = parseInt(req.params.teamId);
     const memberId = parseInt(req.params.memberId);
 
-    // 1. 자기 자신을 삭제하려는 경우 방지
     if (userId === memberId) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
@@ -169,7 +163,6 @@ const deleteTeamMember = async (req, res) => {
       });
     }
 
-    // 2. 특정 팀에서 특정 팀원 정보와 팀 소유자 확인
     const [results] = await pool.query(
       `
       SELECT tm.id as member_id, t.owner_id
@@ -180,7 +173,6 @@ const deleteTeamMember = async (req, res) => {
       [teamId, memberId]
     );
 
-    // 팀원이 존재하지 않음
     if (results.length === 0) {
       return res.status(StatusCodes.NOT_FOUND).json({
         success: false,
@@ -191,7 +183,6 @@ const deleteTeamMember = async (req, res) => {
 
     const memberInfo = results[0];
 
-    // 3. 요청한 사용자가 팀 소유자인지 확인
     if (memberInfo.owner_id !== userId) {
       return res.status(StatusCodes.FORBIDDEN).json({
         success: false,
@@ -201,7 +192,6 @@ const deleteTeamMember = async (req, res) => {
       });
     }
 
-    // 4. 팀원 삭제
     await pool.query('DELETE FROM team_members WHERE id = ?', [
       memberInfo.member_id,
     ]);
@@ -224,7 +214,6 @@ const getTeamMembers = async (req, res) => {
     const userId = req.user.id;
     const teamId = parseInt(req.params.id);
 
-    // 1. 요청자가 해당 팀의 멤버인지 확인
     const [members] = await pool.query(
       `SELECT * FROM team_members WHERE teams_id = ? AND users_id = ?`,
       [teamId, userId]
@@ -238,7 +227,6 @@ const getTeamMembers = async (req, res) => {
       });
     }
 
-    // 2. 팀원 목록 조회 (owner 정보 포함)
     const sql = `SELECT tm.id, tm.teams_id, tm.users_id, u.username,
                     CASE WHEN t.owner_id = tm.users_id
                     THEN true ELSE false END as is_owner
